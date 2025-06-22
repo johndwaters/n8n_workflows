@@ -1,0 +1,737 @@
+{
+  "name": "Airtable to Metricool v2",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "e58c2d45-5b3e-4c5f-a022-034857a242f4",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1000,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "base",
+        "options": {
+          "permissionLevel": []
+        }
+      },
+      "id": "16222613-ce83-4ccb-b816-f7ed3c70541d",
+      "name": "Fetch Unpublished Clips",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [
+        -780,
+        180
+      ],
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "VCdmS1Fi2hfLj5EO",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an expert social media manager for the Afterburn Podcast. Analyze this podcast clip and create engaging social media content.\n\nClip Title: {{ $json['Generated Title'] }}\nTranscript: {{ $json['Transcript'] }}\nEpisode Link: {{ $json['Media URL'] }}\nDescription: {{ $json['Generated Description'] }}\n\nCreate platform-specific content that:\n- Captures the most compelling moment or insight from the transcript\n- Uses authentic military/aviation language where appropriate\n- Creates curiosity without clickbait\n- Includes relevant CTAs to listen\n\nFor each platform:\n- Twitter/X: Sharp, punchy (max 250 chars)\n- Facebook: Conversational, story-driven (400-600 chars)  \n- Instagram: Visual-first caption with emojis (300-500 chars)\n- TikTok: Trendy, energetic, uses current formats (200-300 chars)\n- Pinterest: Descriptive, keyword-rich (200-400 chars)\n\nReturn ONLY valid JSON with this exact structure:\n{\n  \"title\": \"[Improved clip title based on content]\",\n  \"description\": \"[Compelling 2-3 sentence description of the clip]\",\n  \"twitter\": {\n    \"content\": \"[Twitter post text]\",\n    \"hashtags\": [\"#AfterBurnPodcast\", \"#[2-3 relevant hashtags]\"]\n  },\n  \"facebook\": {\n    \"content\": \"[Facebook post text]\"\n  },\n  \"instagram\": {\n    \"content\": \"[Instagram caption]\",\n    \"hashtags\": [\"#AfterBurnPodcast\", \"#[4-6 relevant hashtags]\"]\n  },\n  \"tiktok\": {\n    \"content\": \"[TikTok caption]\",\n    \"hashtags\": [\"#AfterBurnPodcast\", \"#[3-5 trending relevant hashtags]\"]\n  },\n  \"pinterest\": {\n    \"title\": \"[Pin title]\",\n    \"description\": \"[Pin description]\"\n  },\n  \"keyQuote\": \"[Most powerful quote from transcript]\",\n  \"cta\": \"[Call-to-action variation]\"\n}",
+        "options": {
+          "systemMessage": "You are an expert social media manager. Always return valid JSON only, with no additional text or formatting."
+        }
+      },
+      "id": "063a2a63-c4cc-4b96-84bd-07a2b1e6985c",
+      "name": "Generate Social Content",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        -560,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o",
+        "options": {}
+      },
+      "id": "b3dbc1de-5c01-4b1b-b45e-92a9474796c6",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        -520,
+        420
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "78eNoBqlNFxSusT6",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.fields['Uploaded Image'] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "notEmpty",
+                "singleValue": true
+              },
+              "id": "6a77b9ad-73c3-4032-ad8f-4fa06b3367e2"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "8a9081ec-8ba0-40ef-98b3-d481b4a5655f",
+      "name": "Has Uploaded Image?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -184,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.fields['Generate Image'] }}",
+              "rightValue": "={{ true }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c4067f46-d6d0-42f7-b4c0-39f8fd4be10d",
+      "name": "Generate Image Checked?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        36,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "finalImage",
+              "name": "finalImage",
+              "value": "={{ $json.fields['Uploaded Image'][0].url }}",
+              "type": "string"
+            },
+            {
+              "id": "imageSource",
+              "name": "imageSource",
+              "value": "uploaded",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "0358cd12-cdbc-4a79-925f-0479628fb7a7",
+      "name": "Use Uploaded Image",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        256,
+        -20
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "finalImage",
+              "name": "finalImage",
+              "value": "GENERATED_IMAGE_URL_PLACEHOLDER",
+              "type": "string"
+            },
+            {
+              "id": "imageSource",
+              "name": "imageSource",
+              "value": "generated",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "e5814930-feb4-4872-8a49-fe5cf01008da",
+      "name": "Use Generated Image",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        256,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "finalImage",
+              "name": "finalImage",
+              "value": "https://YOUR-DEFAULT-PODCAST-IMAGE-URL.jpg",
+              "type": "string"
+            },
+            {
+              "id": "imageSource",
+              "name": "imageSource",
+              "value": "default",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "2f94dc16-8750-45cc-b806-d178dbafefe8",
+      "name": "Use Default Image",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        256,
+        380
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "options": {}
+      },
+      "id": "f958d566-33f4-42a6-854d-c59a090845f2",
+      "name": "Merge Image Paths",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        476,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse AI output\nconst aiOutput = $input.first().json.output;\nlet socialContent;\n\ntry {\n  if (typeof aiOutput === 'string') {\n    socialContent = JSON.parse(aiOutput);\n  } else {\n    socialContent = aiOutput;\n  }\n} catch (error) {\n  throw new Error('Failed to parse AI output: ' + error.message);\n}\n\n// Get data\nconst airtableData = $input.first().json.fields;\nconst recordId = $input.first().json.id;\nconst imageUrl = $input.first().json.finalImage;\nconst imageSource = $input.first().json.imageSource;\n\n// Generate approval ID\nconst approvalId = Math.random().toString(36).substring(7);\n\n// Format email preview with image\nconst emailHtml = `\n<h2>🎙️ New Afterburn Podcast Clip Ready for Review</h2>\n\n<div style=\"background: #f5f5f5; padding: 20px; border-radius: 10px; margin: 20px 0;\">\n  <h3>📋 Clip Details</h3>\n  <p><strong>Title:</strong> ${socialContent.title}</p>\n  <p><strong>Description:</strong> ${socialContent.description}</p>\n  <p><strong>Key Quote:</strong> <em>\"${socialContent.keyQuote}\"</em></p>\n  <p><strong>Episode Link:</strong> <a href=\"${airtableData.Link}\">${airtableData.Link}</a></p>\n  <p><strong>Image:</strong> ${imageSource === 'uploaded' ? '📤 Using uploaded image' : imageSource === 'generated' ? '🎨 Generated new image' : '📷 Using default image'}</p>\n</div>\n\n${imageUrl ? `<div style=\"text-align: center; margin: 20px 0;\">\n  <img src=\"${imageUrl}\" style=\"max-width: 500px; width: 100%; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);\" alt=\"Social media image\">\n</div>` : ''}\n\n<h3>📱 Social Media Posts Preview</h3>\n\n<div style=\"border: 2px solid #1DA1F2; padding: 15px; margin: 10px 0; border-radius: 8px;\">\n  <h4>🐦 Twitter/X</h4>\n  <p>${socialContent.twitter.content}</p>\n  <p><strong>Hashtags:</strong> ${socialContent.twitter.hashtags.join(' ')}</p>\n</div>\n\n<div style=\"border: 2px solid #4267B2; padding: 15px; margin: 10px 0; border-radius: 8px;\">\n  <h4>📘 Facebook</h4>\n  <p>${socialContent.facebook.content}</p>\n</div>\n\n<div style=\"border: 2px solid #E4405F; padding: 15px; margin: 10px 0; border-radius: 8px;\">\n  <h4>📸 Instagram</h4>\n  <p>${socialContent.instagram.content}</p>\n  <p><strong>Hashtags:</strong> ${socialContent.instagram.hashtags.join(' ')}</p>\n</div>\n\n<div style=\"border: 2px solid #000000; padding: 15px; margin: 10px 0; border-radius: 8px;\">\n  <h4>🎵 TikTok</h4>\n  <p>${socialContent.tiktok.content}</p>\n  <p><strong>Hashtags:</strong> ${socialContent.tiktok.hashtags.join(' ')}</p>\n</div>\n\n<div style=\"border: 2px solid #BD081C; padding: 15px; margin: 10px 0; border-radius: 8px;\">\n  <h4>📌 Pinterest</h4>\n  <p><strong>Title:</strong> ${socialContent.pinterest.title}</p>\n  <p><strong>Description:</strong> ${socialContent.pinterest.description}</p>\n</div>\n\n<div style=\"text-align: center; margin: 30px 0;\">\n  <a href=\"YOUR_WEBHOOK_URL/webhook/approve-social-post?action=approve&id=${approvalId}\" \n     style=\"background: #28a745; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; margin: 0 10px; display: inline-block;\">\n     ✅ Approve & Publish\n  </a>\n  <a href=\"YOUR_WEBHOOK_URL/webhook/approve-social-post?action=reject&id=${approvalId}\" \n     style=\"background: #dc3545; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; margin: 0 10px; display: inline-block;\">\n     ❌ Reject\n  </a>\n</div>\n`;\n\n// Store data for later use\nreturn {\n  json: {\n    approvalId: approvalId,\n    recordId: recordId,\n    emailHtml: emailHtml,\n    socialContent: socialContent,\n    airtableData: airtableData,\n    finalImage: imageUrl,\n    imageSource: imageSource,\n    status: 'pending_approval'\n  }\n};"
+      },
+      "id": "84921702-06c5-4e7f-b2b4-eae414320ea9",
+      "name": "Format Content & Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        696,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "YOUR_BASE_ID",
+          "mode": "list"
+        },
+        "table": {
+          "__rl": true,
+          "value": "YOUR_TABLE_ID",
+          "mode": "list"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "e928d88f-24ce-4494-b56b-10761cfd3aab",
+      "name": "Save to Airtable",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [
+        916,
+        180
+      ],
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "VCdmS1Fi2hfLj5EO",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "rain@theafterburnpodcast.com",
+        "subject": "=🎙️ Afterburn Clip Ready for Approval - {{ $json.socialContent.title }}",
+        "message": "={{ $json.emailHtml }}",
+        "options": {}
+      },
+      "id": "0e04b245-e0f8-469f-a4dc-391475c485a9",
+      "name": "Send Approval Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1136,
+        180
+      ],
+      "webhookId": "f6a1b37e-0354-44de-86c4-d782d850357f",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "SVYwRj4kcbnh8pi3",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "path": "approve-social-post",
+        "options": {}
+      },
+      "id": "7602f552-f107-4c93-ab69-d13536442fc0",
+      "name": "Approval Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1000,
+        740
+      ],
+      "webhookId": "approval-webhook-afterburn"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.query.action }}",
+              "rightValue": "approve",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "2b3569ce-587e-4b6d-b29a-637d505bb54b",
+      "name": "Check Approval",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -780,
+        740
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "YOUR_BASE_ID",
+          "mode": "list"
+        },
+        "table": {
+          "__rl": true,
+          "value": "YOUR_TABLE_ID",
+          "mode": "list"
+        },
+        "filterByFormula": "={Approval ID} = '{{ $json.query.id }}'",
+        "options": {
+          "fields": [
+            "Social Media Content",
+            "Link",
+            "Generated Title",
+            "Final Social Image",
+            "Media URL"
+          ]
+        }
+      },
+      "id": "6b736455-88d6-46df-8b72-8e21466fb150",
+      "name": "Fetch Approved Content",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [
+        -560,
+        640
+      ],
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "VCdmS1Fi2hfLj5EO",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.metricool.com/v1/posts",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"profiles\": [\"YOUR_FACEBOOK_PROFILE_ID\", \"YOUR_TWITTER_PROFILE_ID\", \"YOUR_INSTAGRAM_PROFILE_ID\"],\n  \"text\": {{ JSON.stringify(JSON.parse($json.fields['Social Media Content'])) }},\n  \"media\": [\"{{ $json.fields['Final Social Image'] || $json.fields['Media URL'] }}\"],\n  \"scheduled\": true\n}",
+        "options": {}
+      },
+      "id": "17b8eed8-a8e9-4b01-b001-6b0420caa3dd",
+      "name": "Publish to Metricool",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        -340,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "YOUR_BASE_ID",
+          "mode": "list"
+        },
+        "table": {
+          "__rl": true,
+          "value": "YOUR_TABLE_ID",
+          "mode": "list"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "1246fdcd-44a5-43ae-a59c-d213138ef568",
+      "name": "Mark as Published",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [
+        -120,
+        640
+      ],
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "VCdmS1Fi2hfLj5EO",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "rain@theafterburnpodcast.com",
+        "subject": "=✅ Afterburn Clip Published - {{ $json.fields['Generated Title'] }}",
+        "message": "=<h2>Success! Your Afterburn Podcast clip has been published to all social media platforms.</h2>\n\n<p><strong>Title:</strong> {{ $json.fields['Generated Title'] }}</p>\n<p><strong>Published to:</strong> Twitter, Facebook, Instagram, TikTok, Pinterest</p>\n<p><strong>Status:</strong> Scheduled in Metricool</p>\n\n<p>Check your Metricool dashboard for scheduling details and analytics.</p>",
+        "options": {}
+      },
+      "id": "c315afa6-2731-4889-a7ce-178ba00cd4ec",
+      "name": "Success Notification",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        100,
+        640
+      ],
+      "webhookId": "32f4b089-61db-4f76-b115-415138f5870c"
+    },
+    {
+      "parameters": {
+        "html": "=<h2>Rejection Confirmed</h2>\n<p>The social media post for \"{{ $json.query.id }}\" has been rejected and will not be published.</p>\n<p><a href=\"/workflow/{{ $workflow.id }}\">Return to workflow</a></p>"
+      },
+      "id": "659fa757-9024-4d2b-8c3f-26afc373af31",
+      "name": "Rejection Response",
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        -560,
+        840
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 🚀 Setup Checklist\n\n### 1. Replace These Placeholders:\n- `YOUR_BASE_ID` - Your Airtable base ID\n- `YOUR_TABLE_ID` - Your Clips table ID\n- `YOUR_WEBHOOK_URL` - Your n8n instance URL\n- `YOUR-DEFAULT-PODCAST-IMAGE-URL.jpg` - Default image URL\n- `YOUR_FACEBOOK_PROFILE_ID` - From Metricool\n- `YOUR_TWITTER_PROFILE_ID` - From Metricool\n- `YOUR_INSTAGRAM_PROFILE_ID` - From Metricool\n\n### 2. Add Credentials:\n- Airtable Personal Access Token\n- Gmail OAuth2\n- OpenAI API Key\n- Metricool API Key (in HTTP Header Auth)\n\n### 3. Image Generation (Future):\nReplace `GENERATED_IMAGE_URL_PLACEHOLDER` with:\n- Canva API integration\n- DALL-E 3 generation\n- Bannerbear templates",
+        "height": 580,
+        "width": 470,
+        "color": 7
+      },
+      "id": "ec659131-2fe4-4ed7-9f96-42c3bf7ba639",
+      "name": "Setup Checklist",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1540,
+        140
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Unpublished Clips",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Unpublished Clips": {
+      "main": [
+        [
+          {
+            "node": "Generate Social Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Social Content": {
+      "main": [
+        [
+          {
+            "node": "Has Uploaded Image?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Social Content",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Uploaded Image?": {
+      "main": [
+        [
+          {
+            "node": "Use Uploaded Image",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Generate Image Checked?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Image Checked?": {
+      "main": [
+        [
+          {
+            "node": "Use Generated Image",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Use Default Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Use Uploaded Image": {
+      "main": [
+        [
+          {
+            "node": "Merge Image Paths",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Use Generated Image": {
+      "main": [
+        [
+          {
+            "node": "Merge Image Paths",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Use Default Image": {
+      "main": [
+        [
+          {
+            "node": "Merge Image Paths",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Image Paths": {
+      "main": [
+        [
+          {
+            "node": "Format Content & Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Content & Email": {
+      "main": [
+        [
+          {
+            "node": "Save to Airtable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save to Airtable": {
+      "main": [
+        [
+          {
+            "node": "Send Approval Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approval Webhook": {
+      "main": [
+        [
+          {
+            "node": "Check Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Approval": {
+      "main": [
+        [
+          {
+            "node": "Fetch Approved Content",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Rejection Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Approved Content": {
+      "main": [
+        [
+          {
+            "node": "Publish to Metricool",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish to Metricool": {
+      "main": [
+        [
+          {
+            "node": "Mark as Published",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark as Published": {
+      "main": [
+        [
+          {
+            "node": "Success Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "a875784c-d6df-4b88-a048-4dfc03a1eb07",
+  "meta": {
+    "instanceId": "c6fce9301fb22bab4fad9070563bdee47cd4c8365fb7659560b3fd9b26d02b8a"
+  },
+  "id": "Q3XH9JD2Qdi9Jy3Q",
+  "tags": []
+}
